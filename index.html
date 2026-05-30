@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>우리집 가계부</title>
+  <meta name="description" content="매달 고정 지출 정리 가계부" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="가계부" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --card: #1a1b26;
+      --border: #252636;
+      --text: #e8e4dc;
+      --text-dim: #9ca3af;
+      --text-faint: #7c7c8a;
+      --yellow: #f5c842;
+      --blue: #6ec6f0;
+      --purple: #a78bfa;
+      --green: #34d399;
+      --orange: #fb923c;
+      --red: #f87171;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px 80px;
+    }
+
+    .container { max-width: 480px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header-title { font-size: 11px; letter-spacing: 3px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 4px; }
+    .header-main { font-size: 24px; font-weight: 700; color: #f0ece3; }
+
+    .month-nav { display: flex; gap: 8px; align-items: center; }
+    .nav-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 8px;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .month-display { text-align: center; min-width: 68px; }
+    .month-display .month-name { font-size: 18px; font-weight: 700; color: var(--yellow); }
+    .month-display .year-name { font-size: 12px; color: var(--text-faint); }
+
+    /* Info box */
+    .info-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .info-box span.val { color: var(--yellow); font-weight: 700; }
+
+    /* Section */
+    .section {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Row */
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .row:last-child { border-bottom: none; }
+    .row-label { font-size: 13px; color: var(--text-dim); }
+    .row-value { font-size: 14px; color: #cbd5e1; }
+    .row-value.highlight { font-weight: 600; color: #f0ece3; }
+
+    .subtotal {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 8px;
+      margin-top: 2px;
+      font-size: 13px;
+      color: var(--text-faint);
+    }
+    .subtotal span { font-weight: 600; color: #f0ece3; margin-left: 8px; }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .input-row:last-child { border-bottom: none; }
+    .input-row label { font-size: 13px; color: var(--text-dim); flex-shrink: 0; }
+    .input-row input, .memo-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      outline: none;
+      width: 130px;
+      text-align: right;
+    }
+    .memo-input {
+      width: 100%;
+      margin-top: 6px;
+      text-align: left;
+      color: var(--text-dim);
+    }
+    input:focus { border-color: var(--yellow); }
+
+    /* Grand total */
+    .grand-total {
+      background: linear-gradient(135deg, #f5c842 0%, #f59e0b 100%);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .grand-total .label { color: #1a1200; font-weight: 700; font-size: 15px; }
+    .grand-total .amount { color: #1a1200; font-weight: 700; font-size: 22px; }
+
+    /* Save button */
+    .save-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: #2a2a3a;
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      letter-spacing: 1px;
+    }
+    .save-btn.saved { background: var(--green); color: #fff; }
+
+    /* Year summary */
+    .summary-title { font-size: 11px; letter-spacing: 3px; color: var(--text-faint); text-transform: uppercase; margin: 24px 0 12px; }
+    .summary-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      min-width: 100px;
+    }
+    .summary-card.active { border-color: var(--yellow); background: #252636; }
+    .summary-card .s-month { font-size: 12px; color: var(--text-faint); }
+    .summary-card .s-amount { font-size: 13px; font-weight: 600; color: #f0ece3; margin-top: 2px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+      z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <div class="header-title">가계부</div>
+      <div class="header-main">월별 지출 정리</div>
+    </div>
+    <div class="month-nav">
+      <button class="nav-btn" id="prevBtn">◀</button>
+      <div class="month-display">
+        <div class="month-name" id="monthName"></div>
+        <div class="year-name" id="yearName"></div>
+      </div>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+  </div>
+
+  <div class="info-box">목요일 횟수: <span class="val" id="thursdayCount"></span>번</div>
+
+  <!-- 용돈 -->
+  <div class="section" style="border-left: 3px solid var(--blue)">
+    <div class="section-title" style="color:var(--blue)">👧👦 아이들 용돈</div>
+    <div class="row"><span class="row-label" id="edenLabel">이든 (주 2만원)</span><span class="row-value highlight" id="edenVal"></span></div>
+    <div class="row"><span class="row-label" id="raonLabel">라온 (주 12,500원)</span><span class="row-value highlight" id="raonVal"></span></div>
+    <div class="subtotal">소계 <span id="allowanceTotal"></span></div>
+  </div>
+
+  <!-- 통신 -->
+  <div class="section" style="border-left: 3px solid var(--purple)">
+    <div class="section-title" style="color:var(--purple)">📱 통신요금</div>
+    <div class="row"><span class="row-label">주영1</span><span class="row-value">54,840원</span></div>
+    <div class="row"><span class="row-label">주영2</span><span class="row-value">4,900원</span></div>
+    <div class="row"><span class="row-label">라온</span><span class="row-value">5,900원</span></div>
+    <div class="subtotal">소계 <span>65,640원</span></div>
+  </div>
+
+  <!-- 보험/연금 -->
+  <div class="section" style="border-left: 3px solid var(--green)">
+    <div class="section-title" style="color:var(--green)">🏥 보험 · 연금</div>
+    <div class="row"><span class="row-label">주영 건강보험</span><span class="row-value">175,230원</span></div>
+    <div class="row"><span class="row-label">주영 연금</span><span class="row-value">54,910원</span></div>
+    <div class="row"><span class="row-label">병주 보수외</span><span class="row-value">15,280원</span></div>
+    <div class="subtotal">소계 <span>245,420원</span></div>
+  </div>
+
+  <!-- 교육비 -->
+  <div class="section" style="border-left: 3px solid var(--orange)">
+    <div class="section-title" style="color:var(--orange)">📚 아이들 교육비</div>
+    <div class="input-row">
+      <label>이든 수학 + 추가비</label>
+      <input type="number" id="edenEdu" placeholder="금액 입력" inputmode="numeric" />
+    </div>
+    <div class="input-row">
+      <label>라온 수학 + 추가비</label>
+      <input type="number" id="raonEdu" placeholder="금액 입력" inputmode="numeric" />
+    </div>
+  </div>
+
+  <!-- 기타 -->
+  <div class="section" style="border-left: 3px solid var(--red)">
+    <div class="section-title" style="color:var(--red)">💊 기타 지출</div>
+    <div class="input-row">
+      <label>여드름 치료비</label>
+      <input type="number" id="acne" placeholder="금액 입력" inputmode="numeric" />
+    </div>
+    <div class="input-row">
+      <label>부모님 행사비</label>
+      <input type="number" id="parents" placeholder="금액 입력" inputmode="numeric" />
+    </div>
+    <div class="input-row">
+      <label>기타 추가비용</label>
+      <input type="number" id="other" placeholder="금액 입력" inputmode="numeric" />
+    </div>
+    <input class="memo-input" type="text" id="otherNote" placeholder="메모 (선택)" />
+  </div>
+
+  <!-- 총합 -->
+  <div class="grand-total">
+    <div class="label">이번 달 총 지출</div>
+    <div class="amount" id="grandTotal"></div>
+  </div>
+
+  <button class="save-btn" id="saveBtn">저장하기</button>
+
+  <!-- 연간 요약 -->
+  <div id="summarySection" style="display:none">
+    <div class="summary-title" id="summaryYear"></div>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">✓ 저장됐어요!</div>
+
+<script>
+const STORAGE_KEY = "budget_v2";
+const MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+
+const FIXED = {
+  telecom: 65640,
+  insurance: 245420,
+};
+
+let year, month, allData;
+
+function init() {
+  const today = new Date();
+  year = today.getFullYear();
+  month = today.getMonth() + 1;
+  allData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  render();
+}
+
+function getThursdays(y, m) {
+  let count = 0;
+  const d = new Date(y, m - 1, 1);
+  while (d.getMonth() === m - 1) {
+    if (d.getDay() === 4) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString("ko-KR") + "원";
+}
+
+function key() { return `${year}-${String(month).padStart(2,"0")}`; }
+
+function getEntry() {
+  return allData[key()] || {};
+}
+
+function render() {
+  const th = getThursdays(year, month);
+  const entry = getEntry();
+
+  document.getElementById("monthName").textContent = MONTHS[month - 1];
+  document.getElementById("yearName").textContent = year;
+  document.getElementById("thursdayCount").textContent = th;
+
+  const eden = th * 20000;
+  const raon = th * 12500;
+  document.getElementById("edenLabel").textContent = `이든 (주 2만원 × ${th}주)`;
+  document.getElementById("raonLabel").textContent = `라온 (주 12,500원 × ${th}주)`;
+  document.getElementById("edenVal").textContent = fmt(eden);
+  document.getElementById("raonVal").textContent = fmt(raon);
+  document.getElementById("allowanceTotal").textContent = fmt(eden + raon);
+
+  // Fill inputs
+  document.getElementById("edenEdu").value = entry.edenEdu || "";
+  document.getElementById("raonEdu").value = entry.raonEdu || "";
+  document.getElementById("acne").value = entry.acne || "";
+  document.getElementById("parents").value = entry.parents || "";
+  document.getElementById("other").value = entry.other || "";
+  document.getElementById("otherNote").value = entry.otherNote || "";
+
+  calcTotal();
+  renderSummary();
+}
+
+function calcTotal() {
+  const th = getThursdays(year, month);
+  const eden = th * 20000;
+  const raon = th * 12500;
+  const total =
+    eden + raon +
+    FIXED.telecom + FIXED.insurance +
+    Number(document.getElementById("edenEdu").value || 0) +
+    Number(document.getElementById("raonEdu").value || 0) +
+    Number(document.getElementById("acne").value || 0) +
+    Number(document.getElementById("parents").value || 0) +
+    Number(document.getElementById("other").value || 0);
+  document.getElementById("grandTotal").textContent = fmt(total);
+}
+
+function calcTotalFromEntry(y, m, entry) {
+  const th = getThursdays(y, m);
+  return (th * 20000) + (th * 12500) + FIXED.telecom + FIXED.insurance +
+    Number(entry.edenEdu || 0) + Number(entry.raonEdu || 0) +
+    Number(entry.acne || 0) + Number(entry.parents || 0) + Number(entry.other || 0);
+}
+
+function saveEntry() {
+  allData[key()] = {
+    edenEdu: document.getElementById("edenEdu").value,
+    raonEdu: document.getElementById("raonEdu").value,
+    acne: document.getElementById("acne").value,
+    parents: document.getElementById("parents").value,
+    other: document.getElementById("other").value,
+    otherNote: document.getElementById("otherNote").value,
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+
+  const toast = document.getElementById("toast");
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2000);
+  renderSummary();
+}
+
+function renderSummary() {
+  const keys = Object.keys(allData).filter(k => k.startsWith(year + "-")).sort();
+  const section = document.getElementById("summarySection");
+  const grid = document.getElementById("summaryGrid");
+  const title = document.getElementById("summaryYear");
+
+  if (keys.length === 0) { section.style.display = "none"; return; }
+  section.style.display = "block";
+  title.textContent = year + "년 기록";
+  grid.innerHTML = "";
+
+  keys.forEach(k => {
+    const m = parseInt(k.split("-")[1]);
+    const e = allData[k];
+    const total = calcTotalFromEntry(year, m, e);
+    const isActive = m === month;
+    const card = document.createElement("div");
+    card.className = "summary-card" + (isActive ? " active" : "");
+    card.innerHTML = `<div class="s-month">${m}월</div><div class="s-amount">${fmt(total)}</div>`;
+    card.onclick = () => { month = m; render(); };
+    grid.appendChild(card);
+  });
+}
+
+// Events
+document.getElementById("prevBtn").onclick = () => {
+  if (month === 1) { month = 12; year--; } else month--;
+  render();
+};
+document.getElementById("nextBtn").onclick = () => {
+  if (month === 12) { month = 1; year++; } else month++;
+  render();
+};
+document.getElementById("saveBtn").onclick = saveEntry;
+
+["edenEdu","raonEdu","acne","parents","other"].forEach(id => {
+  document.getElementById(id).addEventListener("input", calcTotal);
+});
+
+// Service Worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+init();
+</script>
+</body>
+</html>
